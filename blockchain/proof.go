@@ -53,19 +53,19 @@ func (pow *ProofOfWork) ConstructData(nonce int) []byte {
 
 // Calculate finds a nonce that meet the difficulty
 func (pow *ProofOfWork) Calculate() (int, []byte) {
-	var intHash big.Int
-	var hash [32]byte
+	var hashInBytes [32]byte
 
 	nonce := 0
 
 	for nonce < math.MaxInt64 {
 		data := pow.ConstructData(nonce)
-		hash = sha256.Sum256(data)
+		hashInBytes = sha256.Sum256(data)
 
-		fmt.Printf("\r%x", hash)
-		intHash.SetBytes(hash[:])
+		fmt.Printf("\r%x", hashInBytes)
+		var hashInInt big.Int
+		hashInInt.SetBytes(hashInBytes[:])
 
-		if intHash.Cmp(pow.Target) != -1 {
+		if hashInInt.Cmp(pow.Target) != -1 {
 			nonce += 1
 		} else {
 			break
@@ -74,7 +74,7 @@ func (pow *ProofOfWork) Calculate() (int, []byte) {
 	}
 	fmt.Println()
 
-	return nonce, hash[:]
+	return nonce, hashInBytes[:]
 }
 
 func (pow *ProofOfWork) Validate() bool {
