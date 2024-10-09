@@ -37,13 +37,13 @@ func NewProof(b *Block) *ProofOfWork {
 	return pow
 }
 
-func (pow *ProofOfWork) InitData(nonce int) []byte {
+func (pow *ProofOfWork) ConstructData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.Block.PrevHash,
 			pow.Block.Data,
-			ToHex(int64(nonce)),
-			ToHex(int64(Difficulty)),
+			Int64ToBytes(int64(nonce)),
+			Int64ToBytes(int64(Difficulty)),
 		},
 		[]byte{},
 	)
@@ -51,23 +51,24 @@ func (pow *ProofOfWork) InitData(nonce int) []byte {
 	return data
 }
 
-func (pow *ProofOfWork) Run() (int, []byte) {
+// Calculate finds a nonce that meet the difficulty
+func (pow *ProofOfWork) Calculate() (int, []byte) {
 	var intHash big.Int
 	var hash [32]byte
 
 	nonce := 0
 
 	for nonce < math.MaxInt64 {
-		data := pow.InitData(nonce)
+		data := pow.ConstructData(nonce)
 		hash = sha256.Sum256(data)
 
 		fmt.Printf("\r%x", hash)
 		intHash.SetBytes(hash[:])
 
-		if intHash.Cmp(pow.Target) == -1 {
-			break
+		if intHash.Cmp(pow.Target) != -1 {
+			nonce += 1
 		} else {
-			nonce++
+			break
 		}
 
 	}
@@ -79,7 +80,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 func (pow *ProofOfWork) Validate() bool {
 	var intHash big.Int
 
-	data := pow.InitData(pow.Block.Nonce)
+	data := pow.ConstructData(pow.Block.Nonce)
 
 	hash := sha256.Sum256(data)
 	intHash.SetBytes(hash[:])
@@ -87,12 +88,11 @@ func (pow *ProofOfWork) Validate() bool {
 	return intHash.Cmp(pow.Target) == -1
 }
 
-func ToHex(num int64) []byte {
+func Int64ToBytes(num int64) []byte {
 	buff := new(bytes.Buffer)
 	err := binary.Write(buff, binary.BigEndian, num)
 	if err != nil {
 		log.Panic(err)
-
 	}
 
 	return buff.Bytes()

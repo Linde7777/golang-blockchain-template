@@ -11,10 +11,10 @@ type Block struct {
 	Nonce    int
 }
 
-func CreateBlock(data string, prevHash []byte) *Block {
+func NewBlock(data string, prevHash []byte) *Block {
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
 	pow := NewProof(block)
-	nonce, hash := pow.Run()
+	nonce, hash := pow.Calculate()
 
 	block.Hash = hash[:]
 	block.Nonce = nonce
@@ -24,14 +24,14 @@ func CreateBlock(data string, prevHash []byte) *Block {
 
 func (chain *BlockChain) AddBlock(data string) {
 	prevBlock := chain.Blocks[len(chain.Blocks)-1]
-	new := CreateBlock(data, prevBlock.Hash)
-	chain.Blocks = append(chain.Blocks, new)
+	newBlock := NewBlock(data, prevBlock.Hash)
+	chain.Blocks = append(chain.Blocks, newBlock)
 }
 
-func Genesis() *Block {
-	return CreateBlock("Genesis", []byte{})
+func NewGenesisBlock() *Block {
+	return NewBlock("I am Genesis Block", []byte{})
 }
 
-func InitBlockChain() *BlockChain {
-	return &BlockChain{[]*Block{Genesis()}}
+func NewBlockChain() *BlockChain {
+	return &BlockChain{[]*Block{NewGenesisBlock()}}
 }
