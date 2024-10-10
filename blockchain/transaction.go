@@ -27,7 +27,7 @@ type TxInput struct {
 	ID  []byte // The ID of the transaction containing the output we're spending
 	Out int    // The index of the output in the referenced transaction
 
-	// The signature to unlock the output (in this simple implementation, 
+	// The signature to unlock the output (in this simple implementation,
 	// it's just the sender's address)
 	Sig string
 }
@@ -44,9 +44,8 @@ func (tx *Transaction) SetID() {
 	tx.ID = hash[:]
 }
 
-// CoinbaseTx creates a new coinbase transaction
 // Coinbase transactions are special transactions that create new coins
-func CoinbaseTx(to, data string) *Transaction {
+func NewCoinbaseTx(to, data string) *Transaction {
 	if data == "" {
 		data = fmt.Sprintf("Coins to %s", to)
 	}

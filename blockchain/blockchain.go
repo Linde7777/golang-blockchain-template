@@ -78,7 +78,7 @@ func InitBlockChain(address string) *BlockChain {
 	Handle(err)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		cbtx := CoinbaseTx(address, genesisData)
+		cbtx := NewCoinbaseTx(address, genesisData)
 		genesis := Genesis(cbtx)
 		fmt.Println("Genesis created")
 		err = txn.Set(genesis.Hash, genesis.Serialize())
@@ -210,27 +210,27 @@ func (chain *BlockChain) FindUTXO(address string) []TxOutput {
 }
 
 // FindSpendableOutputs finds and returns the spendable outputs to reference in inputs
-func (chain *BlockChain) FindSpendableOutputs(address string, amount int) (int, map[string][]int) {
-	unspentOuts := make(map[string][]int)
+func (chain *BlockChain) FindSpendableOutputs(address string, amount int) (spendableAmount int, unspentOuts map[string][]int) {
+	unspentOuts = make(map[string][]int)
 	unspentTxs := chain.FindUnspentTransactions(address)
-	accumulated := 0
+	spendableAmount = 0
 
 Work:
 	for _, tx := range unspentTxs {
 		txID := hex.EncodeToString(tx.ID)
 
 		for outIdx, out := range tx.Outputs {
-			if out.CanBeUnlocked(address) && accumulated < amount {
-				accumulated += out.Value
+			if out.CanBeUnlocked(address) && spendableAmount < amount {
+				spendableAmount += out.Value
 				unspentOuts[txID] = append(unspentOuts[txID], outIdx)
 
 				// If we've accumulated enough, break the outer loop
-				if accumulated >= amount {
+				if spendableAmount >= amount {
 					break Work
 				}
 			}
 		}
 	}
 
-	return accumulated, unspentOuts
+	return spendableAmount, unspentOuts
 }
