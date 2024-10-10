@@ -16,13 +16,19 @@ type Transaction struct {
 }
 
 type TxOutput struct {
-	Value  int
+	Value int // Amount of coins
+
+	// The public key of the recipient (in this
+	// simple implementation, it's just an address)
 	PubKey string
 }
 
 type TxInput struct {
-	ID  []byte
-	Out int
+	ID  []byte // The ID of the transaction containing the output we're spending
+	Out int    // The index of the output in the referenced transaction
+
+	// The signature to unlock the output (in this simple implementation, 
+	// it's just the sender's address)
 	Sig string
 }
 
@@ -38,13 +44,16 @@ func (tx *Transaction) SetID() {
 	tx.ID = hash[:]
 }
 
+// CoinbaseTx creates a new coinbase transaction
+// Coinbase transactions are special transactions that create new coins
 func CoinbaseTx(to, data string) *Transaction {
 	if data == "" {
 		data = fmt.Sprintf("Coins to %s", to)
 	}
 
+	// Coinbase input has no real input, so we use empty values
 	txin := TxInput{[]byte{}, -1, data}
-	txout := TxOutput{100, to}
+	txout := TxOutput{100, to} // Reward is set to 100 coins
 
 	tx := Transaction{nil, []TxInput{txin}, []TxOutput{txout}}
 	tx.SetID()
@@ -56,9 +65,9 @@ func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction
 	var inputs []TxInput
 	var outputs []TxOutput
 
-	acc, validOutputs := chain.FindSpendableOutputs(from, amount)
+	accmulated, validOutputs := chain.FindSpendableOutputs(from, amount)
 
-	if acc < amount {
+	if accmulated < amount {
 		log.Panic("Error: not enough funds")
 	}
 
@@ -74,8 +83,9 @@ func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction
 
 	outputs = append(outputs, TxOutput{amount, to})
 
-	if acc > amount {
-		outputs = append(outputs, TxOutput{acc - amount, from})
+	// If there's a change, send it back to the sender
+	if accmulated > amount {
+		outputs = append(outputs, TxOutput{accmulated - amount, from})
 	}
 
 	tx := Transaction{nil, inputs, outputs}
